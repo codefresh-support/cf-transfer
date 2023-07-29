@@ -1,0 +1,50 @@
+version: "1.0"
+
+stages:
+  - Clone
+  - Test
+  - Build
+  - Release
+
+steps:
+  clone:
+    title: Cloning repository
+    stage: Clone
+    type: git-clone
+    repo: ${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
+    revision: ${{CF_BRANCH}}
+    git: github-zhenya
+    depth: 1
+
+  test:
+    title: Testing
+    stage: Test
+    image: denoland/deno:alpine-1.34.1
+    working_directory: ${{CF_REPO_NAME}}
+    commands:
+      - deno task test
+      - deno task lint
+
+  build:
+    title: Compiling
+    stage: Build
+    image: denoland/deno:alpine-1.34.1
+    working_directory: ${{CF_REPO_NAME}}
+    commands:
+      - cf_export VERSION=$(cat VERSION)
+      - deno task compile
+
+  github_release:
+    title: Publishing release
+    stage: Release
+    type: github-release
+    arguments:
+      git_context_name: github-zhenya
+      release_name: 'cf-transfer ${{VERSION}}'
+      release_description: ${{CF_COMMIT_MESSAGE}}
+      release_tag: ${{VERSION}}
+      files:
+        - '${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_${{VERSION}}_linux_x86_64'
+        - '${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_${{VERSION}}_windows_x86_64.exe'
+        - '${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_${{VERSION}}_darwin_x86_64'
+        - '${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_${{VERSION}}_darwin_aarch64'
