@@ -22,8 +22,8 @@ steps:
     image: denoland/deno:alpine-1.34.1
     working_directory: ${{CF_REPO_NAME}}
     commands:
+      - deno lint
       - deno task test
-      - deno task lint
 
   build:
     title: Compiling
